@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Windows release
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag version
+        shell: pwsh
+        run: |
+          $packageVersion = node -p "require('./package.json').version"
+          if ("v$packageVersion" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME does not match package version $packageVersion."
+          }
+
+      - name: Build Windows installer
+        run: npm run make
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          artifacts=(out/make/squirrel.windows/x64/*)
+          if ((${#artifacts[@]} == 0)); then
+            echo "No release artifacts found."
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" "${artifacts[@]}" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

@@ -94,3 +94,8 @@ The project pins its runtime and build dependencies in `package.json` and `packa
 ## License
 
 This project is licensed under the BSD Zero Clause License (0BSD). See `LICENSE`.
+
+## GitHub Actions
+
+- `.github/workflows/ci.yml` runs tests and a TypeScript build on pushes and pull requests targeting `main`.
+- `.github/workflows/release.yml` builds and publishes a Windows GitHub Release when a matching `v*` tag is pushed. The tag must match the version in `package.json`.
