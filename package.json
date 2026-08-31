@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "FixLinks converts copied social-post links into Discord-friendly embed links.",
   "author": "FixLinks contributors",
+  "license": "0BSD",
   "type": "module",
   "main": "dist/main.js",
   "engines": {

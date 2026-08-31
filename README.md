@@ -90,3 +90,7 @@ The project pins its runtime and build dependencies in `package.json` and `packa
 - `test/` — Node.js built-in test coverage.
 - `forge.config.cjs` — Electron Forge and Squirrel configuration.
 - `assets/fixlinks.ico` — application and installer icon.
+
+## License
+
+This project is licensed under the BSD Zero Clause License (0BSD). See `LICENSE`.
