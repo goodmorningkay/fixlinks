@@ -4,6 +4,7 @@ import {
   processClipboardOnce,
   type ClipboardTextPort
 } from '../src/clipboard-monitor.js';
+import type { LinkRewriteOptions } from '../src/link-transformer.js';
 
 class InMemoryClipboardTextPort implements ClipboardTextPort {
   text: string;
@@ -66,6 +67,46 @@ test('does not write while paused', async () => {
 
   assert.equal(result, source);
   assert.deepEqual(port.writes, []);
+});
+
+test('removes metadata when the option is enabled', async () => {
+  const source =
+    'https://www.instagram.com/p/CODE_123?igsh=example#fragment';
+  const target = 'https://kkinstagram.com/p/CODE_123';
+  const options: LinkRewriteOptions = {
+    removeMetadata: true,
+    services: {
+      instagram: true,
+      twitter: true,
+      tiktok: true
+    }
+  };
+  const port = new InMemoryClipboardTextPort(source);
+
+  const result = await processClipboardOnce(port, undefined, true, options);
+
+  assert.equal(result, target);
+  assert.deepEqual(port.writes, [target]);
+  assert.equal(port.text, target);
+});
+
+test('does not write a link from a disabled service', async () => {
+  const source = 'https://tiktok.com/@creator/video/1234567890123456789';
+  const options: LinkRewriteOptions = {
+    removeMetadata: false,
+    services: {
+      instagram: true,
+      twitter: true,
+      tiktok: false
+    }
+  };
+  const port = new InMemoryClipboardTextPort(source);
+
+  const result = await processClipboardOnce(port, undefined, true, options);
+
+  assert.equal(result, source);
+  assert.deepEqual(port.writes, []);
+  assert.equal(port.text, source);
 });
 
 test('does not overwrite a newer clipboard value and retries it next pass', async () => {

@@ -1,4 +1,8 @@
-import { rewriteSocialLink } from './link-transformer.js';
+import {
+  DEFAULT_LINK_REWRITE_OPTIONS,
+  rewriteSocialLink,
+  type LinkRewriteOptions
+} from './link-transformer.js';
 
 export interface ClipboardTextPort {
   readText(): Promise<string>;
@@ -8,7 +12,8 @@ export interface ClipboardTextPort {
 export async function processClipboardOnce(
   port: ClipboardTextPort,
   previousText: string | undefined,
-  enabled: boolean
+  enabled: boolean,
+  options: LinkRewriteOptions = DEFAULT_LINK_REWRITE_OPTIONS
 ): Promise<string | undefined> {
   let currentText: string;
   try {
@@ -21,7 +26,7 @@ export async function processClipboardOnce(
     return currentText;
   }
 
-  const rewrittenText = rewriteSocialLink(currentText);
+  const rewrittenText = rewriteSocialLink(currentText, options);
   if (rewrittenText === null) {
     return currentText;
   }

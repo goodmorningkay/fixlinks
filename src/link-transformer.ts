@@ -21,16 +21,35 @@ const FIX_LINK_HOSTS: Record<string, true> = {
   'tnktok.com': true
 };
 
+export type LinkService = 'instagram' | 'twitter' | 'tiktok';
+
+export interface LinkRewriteOptions {
+  readonly removeMetadata: boolean;
+  readonly services: Readonly<Record<LinkService, boolean>>;
+}
+
+export const DEFAULT_LINK_REWRITE_OPTIONS: LinkRewriteOptions = {
+  removeMetadata: false,
+  services: {
+    instagram: true,
+    twitter: true,
+    tiktok: true
+  }
+};
+
 const INSTAGRAM_POST_PATH = /^\/(?:p|reel|tv)\/[^/]+\/?$/u;
 const X_POST_PATH =
   /^\/(?:[^/]+\/status\/[0-9]+|i\/status\/[0-9]+|i\/web\/status\/[0-9]+)(?:\/(?:photo|video)\/[0-9]+)?\/?$/u;
 const TIKTOK_POST_PATH = /^\/@[^/]+\/(?:video|photo)\/[0-9]+\/?$/u;
 
 /**
- * Rewrites one supported direct social-post URL to its embed-friendly host.
+ * Rewrites one supported direct social-post URL to an embed-friendly host.
  * Returns null when the clipboard text is not safe or not supported.
  */
-export function rewriteSocialLink(input: string): string | null {
+export function rewriteSocialLink(
+  input: string,
+  options: LinkRewriteOptions = DEFAULT_LINK_REWRITE_OPTIONS
+): string | null {
   const trimmed = input.trim();
   const hasOneUrl = (trimmed.match(/https?:\/\//giu) ?? []).length === 1;
   const authorityMatch = /^https:\/\/([^/?#]*)/iu.exec(trimmed);
@@ -71,11 +90,23 @@ export function rewriteSocialLink(input: string): string | null {
   }
 
   let targetHost: string | undefined;
-  if (INSTAGRAM_HOSTS[hostname] === true && INSTAGRAM_POST_PATH.test(url.pathname)) {
+  if (
+    INSTAGRAM_HOSTS[hostname] === true &&
+    options.services.instagram &&
+    INSTAGRAM_POST_PATH.test(url.pathname)
+  ) {
     targetHost = 'kkinstagram.com';
-  } else if (X_HOSTS[hostname] === true && X_POST_PATH.test(url.pathname)) {
+  } else if (
+    X_HOSTS[hostname] === true &&
+    options.services.twitter &&
+    X_POST_PATH.test(url.pathname)
+  ) {
     targetHost = 'fixupx.com';
-  } else if (TIKTOK_HOSTS[hostname] === true && TIKTOK_POST_PATH.test(url.pathname)) {
+  } else if (
+    TIKTOK_HOSTS[hostname] === true &&
+    options.services.tiktok &&
+    TIKTOK_POST_PATH.test(url.pathname)
+  ) {
     targetHost = 'tnktok.com';
   }
 
@@ -84,6 +115,11 @@ export function rewriteSocialLink(input: string): string | null {
   }
 
   url.hostname = targetHost;
+  if (options.removeMetadata) {
+    url.search = '';
+    url.hash = '';
+  }
+
   const leadingWhitespaceLength = input.length - input.trimStart().length;
   const trailingWhitespaceLength = input.length - input.trimEnd().length;
   const trailingWhitespaceStart = input.length - trailingWhitespaceLength;

@@ -7,12 +7,21 @@ import {
   processClipboardOnce,
   type ClipboardTextPort
 } from './clipboard-monitor.js';
+import {
+  DEFAULT_LINK_REWRITE_OPTIONS,
+  type LinkRewriteOptions,
+  type LinkService
+} from './link-transformer.js';
 
 const POLL_INTERVAL_MS = 500;
 const LOGIN_ITEM_ARGS = ['--started-at-login'];
 
-type LoginSettings = {
+type AppSettings = {
   runAtLogin: boolean;
+  removeMetadata: boolean;
+  instagram: boolean;
+  twitter: boolean;
+  tiktok: boolean;
 };
 
 const clipboardPort: ClipboardTextPort = {
@@ -29,8 +38,9 @@ let pollTimer: NodeJS.Timeout | undefined;
 let previousClipboardText: string | undefined;
 let enabled = true;
 let runAtLogin = true;
+let rewriteOptions: LinkRewriteOptions = DEFAULT_LINK_REWRITE_OPTIONS;
 let loginItemPath = process.execPath;
-let settings: Store<LoginSettings> | undefined;
+let settings: Store<AppSettings> | undefined;
 let isQuitting = false;
 
 function getStableLoginItemPath(): string {
@@ -62,6 +72,39 @@ function applyLoginItemSetting(openAtLogin: boolean): boolean | undefined {
   }
 }
 
+function toggleMetadataRemoval(): void {
+  if (settings === undefined) {
+    return;
+  }
+
+  const nextValue = !rewriteOptions.removeMetadata;
+  rewriteOptions = {
+    ...rewriteOptions,
+    removeMetadata: nextValue
+  };
+  settings.set('removeMetadata', nextValue);
+  previousClipboardText = undefined;
+  refreshTray();
+}
+
+function toggleService(service: LinkService): void {
+  if (settings === undefined) {
+    return;
+  }
+
+  const nextValue = !rewriteOptions.services[service];
+  rewriteOptions = {
+    ...rewriteOptions,
+    services: {
+      ...rewriteOptions.services,
+      [service]: nextValue
+    }
+  };
+  settings.set(service, nextValue);
+  previousClipboardText = undefined;
+  refreshTray();
+}
+
 function refreshTray(): void {
   if (tray === undefined) {
     return;
@@ -82,6 +125,35 @@ function refreshTray(): void {
           }
           refreshTray();
         }
+      },
+      {
+        label: 'Remove metadata',
+        type: 'checkbox',
+        checked: rewriteOptions.removeMetadata,
+        click: () => toggleMetadataRemoval()
+      },
+      {
+        label: 'Services',
+        submenu: [
+          {
+            label: 'Instagram',
+            type: 'checkbox',
+            checked: rewriteOptions.services.instagram,
+            click: () => toggleService('instagram')
+          },
+          {
+            label: 'X/Twitter',
+            type: 'checkbox',
+            checked: rewriteOptions.services.twitter,
+            click: () => toggleService('twitter')
+          },
+          {
+            label: 'TikTok',
+            type: 'checkbox',
+            checked: rewriteOptions.services.tiktok,
+            click: () => toggleService('tiktok')
+          }
+        ]
       },
       {
         label: 'Run at login',
@@ -127,7 +199,8 @@ async function pollClipboard(): Promise<void> {
   previousClipboardText = await processClipboardOnce(
     clipboardPort,
     previousClipboardText,
-    enabled
+    enabled,
+    rewriteOptions
   );
 
   if (!isQuitting) {
@@ -138,20 +211,48 @@ async function pollClipboard(): Promise<void> {
 }
 
 async function startApplication(): Promise<void> {
-  settings = new Store<LoginSettings>({
+  settings = new Store<AppSettings>({
     schema: {
       runAtLogin: {
+        type: 'boolean',
+        default: true
+      },
+      removeMetadata: {
+        type: 'boolean',
+        default: false
+      },
+      instagram: {
+        type: 'boolean',
+        default: true
+      },
+      twitter: {
+        type: 'boolean',
+        default: true
+      },
+      tiktok: {
         type: 'boolean',
         default: true
       }
     },
     defaults: {
-      runAtLogin: true
+      runAtLogin: true,
+      removeMetadata: false,
+      instagram: true,
+      twitter: true,
+      tiktok: true
     }
   });
 
   loginItemPath = app.isPackaged ? getStableLoginItemPath() : process.execPath;
   runAtLogin = settings.get('runAtLogin');
+  rewriteOptions = {
+    removeMetadata: settings.get('removeMetadata'),
+    services: {
+      instagram: settings.get('instagram'),
+      twitter: settings.get('twitter'),
+      tiktok: settings.get('tiktok')
+    }
+  };
   if (app.isPackaged) {
     const actualValue = applyLoginItemSetting(runAtLogin);
     if (actualValue !== undefined) {

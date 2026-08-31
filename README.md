@@ -6,7 +6,7 @@ FixLinks watches the system clipboard and changes supported social-post links to
 
 - Runs from the system tray. It does not open a main window.
 - Rewrites direct Instagram, X/Twitter, and TikTok post links.
-- Preserves the URL scheme, path, query string, fragment, and outer whitespace.
+- Preserves the URL scheme, path, query string, fragment, and outer whitespace unless metadata removal is enabled.
 - Reads and writes the clipboard locally. It does not make network requests.
 - Pauses from the tray menu without changing the saved run-at-login setting.
 - Prevents duplicate application instances.
@@ -35,7 +35,14 @@ FixLinks only changes one direct `https://` URL. It leaves profiles, short links
 2. Start FixLinks. The app appears in the system tray.
 3. Copy a supported post link.
 4. Paste the changed link into Discord.
-5. Right-click the tray icon to pause monitoring, enable it again, change **Run at login**, or exit.
+5. Right-click the tray icon to pause monitoring, remove URL metadata, enable or disable individual services, change **Run at login**, or exit.
+
+## Settings
+
+- **Remove metadata** removes the query string and fragment from converted links. It is disabled by default.
+- **Services** controls Instagram, X/Twitter, and TikTok independently. All services are enabled by default.
+- **Enabled** pauses clipboard monitoring for the current session.
+- **Remove metadata**, service choices, and **Run at login** are saved between launches.
 
 The installer is created at:
 

@@ -1,12 +1,37 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { rewriteSocialLink } from '../src/link-transformer.js';
+import {
+  rewriteSocialLink,
+  type LinkRewriteOptions,
+  type LinkService
+} from '../src/link-transformer.js';
 
 type LinkCase = {
   name: string;
   input: string;
   expected: string;
 };
+
+type OptionOverrides = {
+  removeMetadata?: boolean;
+  services?: Partial<Record<LinkService, boolean>>;
+};
+
+const allServices: Record<LinkService, boolean> = {
+  instagram: true,
+  twitter: true,
+  tiktok: true
+};
+
+function makeOptions(overrides: OptionOverrides = {}): LinkRewriteOptions {
+  return {
+    removeMetadata: overrides.removeMetadata ?? false,
+    services: {
+      ...allServices,
+      ...overrides.services
+    }
+  };
+}
 
 const instagramCases: LinkCase[] = [
   {
@@ -120,6 +145,84 @@ for (const linkCase of [
     assert.equal(rewriteSocialLink(linkCase.input), linkCase.expected);
   });
 }
+
+const metadataRemovalCases: LinkCase[] = [
+  {
+    name: 'Instagram query and fragment',
+    input: '\t https://www.instagram.com/reel/CODE_123/?igsh=abc#fragment \n',
+    expected: '\t https://kkinstagram.com/reel/CODE_123/ \n'
+  },
+  {
+    name: 'X query and fragment',
+    input: 'https://x.com/example/status/1234567890?ref_src=test#post',
+    expected: 'https://fixupx.com/example/status/1234567890'
+  },
+  {
+    name: 'TikTok query and fragment',
+    input: 'https://www.tiktok.com/@creator/video/1234567890123456789?share=1#post',
+    expected: 'https://tnktok.com/@creator/video/1234567890123456789'
+  }
+];
+
+for (const linkCase of metadataRemovalCases) {
+  test(`removes metadata from ${linkCase.name}`, () => {
+    assert.equal(
+      rewriteSocialLink(
+        linkCase.input,
+        makeOptions({ removeMetadata: true })
+      ),
+      linkCase.expected
+    );
+  });
+}
+
+const disabledServiceCases: Array<{
+  name: string;
+  input: string;
+  options: LinkRewriteOptions;
+}> = [
+  {
+    name: 'Instagram',
+    input: 'https://instagram.com/p/CODE_123',
+    options: makeOptions({ services: { instagram: false } })
+  },
+  {
+    name: 'X/Twitter',
+    input: 'https://x.com/example/status/1234567890',
+    options: makeOptions({ services: { twitter: false } })
+  },
+  {
+    name: 'TikTok',
+    input: 'https://tiktok.com/@creator/video/1234567890123456789',
+    options: makeOptions({ services: { tiktok: false } })
+  }
+];
+
+for (const linkCase of disabledServiceCases) {
+  test(`does not rewrite disabled ${linkCase.name}`, () => {
+    assert.equal(rewriteSocialLink(linkCase.input, linkCase.options), null);
+  });
+}
+
+test('can keep Instagram and X/Twitter enabled while disabling TikTok', () => {
+  const options = makeOptions({ services: { tiktok: false } });
+
+  assert.equal(
+    rewriteSocialLink('https://instagram.com/p/CODE_123', options),
+    'https://kkinstagram.com/p/CODE_123'
+  );
+  assert.equal(
+    rewriteSocialLink('https://x.com/example/status/1234567890', options),
+    'https://fixupx.com/example/status/1234567890'
+  );
+  assert.equal(
+    rewriteSocialLink(
+      'https://tiktok.com/@creator/video/1234567890123456789',
+      options
+    ),
+    null
+  );
+});
 
 const rejectedInputs = [
   'https://instagram.com/example',
