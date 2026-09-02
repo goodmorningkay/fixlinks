@@ -1,6 +1,6 @@
 # FixLinks
 
-FixLinks watches the system clipboard and changes supported social-post links to hosts that produce Discord-friendly embeds.
+FixLinks watches the system clipboard. It changes supported social-post links to hosts that produce Discord-friendly embeds.
 
 ## Features
 
@@ -39,10 +39,10 @@ FixLinks only changes one direct `https://` URL. It leaves profiles, short links
 
 ## Settings
 
-- **Remove metadata** removes the query string and fragment from converted links. It is disabled by default.
+- **Remove metadata** removes the query string and fragment from converted links. It is disabled by default. The setting is saved between launches.
 - **Services** controls Instagram, X/Twitter, and TikTok independently. All services are enabled by default.
 - **Enabled** pauses clipboard monitoring for the current session.
-- **Remove metadata**, service choices, and **Run at login** are saved between launches.
+- Service choices and **Run at login** are saved between launches.
 
 The installer is created at:
 
@@ -87,16 +87,16 @@ Create the Windows installer:
 npm run make
 ```
 
-The project pins its runtime and build dependencies in `package.json` and `package-lock.json`.
+The project records its runtime and build dependencies in `package.json` and `package-lock.json`.
 
 ## Project layout
 
-- `src/main.ts` — Electron lifecycle, tray menu, login settings, and clipboard polling.
-- `src/link-transformer.ts` — safe direct-link transformation rules.
-- `src/clipboard-monitor.ts` — clipboard read/write coordination and race protection.
-- `test/` — Node.js built-in test coverage.
-- `forge.config.cjs` — Electron Forge and Squirrel configuration.
-- `assets/fixlinks.ico` — application and installer icon.
+- `src/main.ts`: Electron lifecycle, tray menu, login settings, and clipboard polling.
+- `src/link-transformer.ts`: safe direct-link transformation rules.
+- `src/clipboard-monitor.ts`: clipboard read/write coordination and race protection.
+- `test/`: Node.js built-in test coverage.
+- `forge.config.cjs`: Electron Forge and Squirrel configuration.
+- `assets/fixlinks.ico`: application and installer icon.
 
 ## License
 
