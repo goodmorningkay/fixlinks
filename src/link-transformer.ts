@@ -15,11 +15,6 @@ const TIKTOK_HOSTS: Record<string, true> = {
   'www.tiktok.com': true,
   'm.tiktok.com': true
 };
-const FIX_LINK_HOSTS: Record<string, true> = {
-  'kkinstagram.com': true,
-  'fixupx.com': true,
-  'tnktok.com': true
-};
 
 export type LinkService = 'instagram' | 'twitter' | 'tiktok';
 
@@ -39,7 +34,7 @@ export const DEFAULT_LINK_REWRITE_OPTIONS: LinkRewriteOptions = {
 
 const INSTAGRAM_POST_PATH = /^\/(?:p|reel|tv)\/[^/]+\/?$/u;
 const X_POST_PATH =
-  /^\/(?:[^/]+\/status\/[0-9]+|i\/status\/[0-9]+|i\/web\/status\/[0-9]+)(?:\/(?:photo|video)\/[0-9]+)?\/?$/u;
+  /^\/(?:[^/]+|i\/web)\/status\/[0-9]+(?:\/(?:photo|video)\/[0-9]+)?\/?$/u;
 const TIKTOK_POST_PATH = /^\/@[^/]+\/(?:video|photo)\/[0-9]+\/?$/u;
 
 /**
@@ -84,10 +79,7 @@ export function rewriteSocialLink(
     return null;
   }
 
-  const hostname = url.hostname.toLowerCase();
-  if (FIX_LINK_HOSTS[hostname] === true) {
-    return null;
-  }
+  const hostname = url.hostname;
 
   let targetHost: string | undefined;
   if (
@@ -121,8 +113,7 @@ export function rewriteSocialLink(
   }
 
   const leadingWhitespaceLength = input.length - input.trimStart().length;
-  const trailingWhitespaceLength = input.length - input.trimEnd().length;
-  const trailingWhitespaceStart = input.length - trailingWhitespaceLength;
+  const trailingWhitespaceStart = input.trimEnd().length;
   return (
     input.slice(0, leadingWhitespaceLength) +
     url.toString() +
