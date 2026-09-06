@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'"
+  >
+  <title>Fix services</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <main>
+    <h1>Fix services</h1>
+    <p id="notice" class="notice" role="alert" hidden></p>
+    <form id="settings-form" novalidate>
+      <div class="field">
+        <label for="instagram-host">Instagram hostname</label>
+        <input
+          id="instagram-host"
+          type="text"
+          aria-describedby="host-help instagram-error"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <p class="error" id="instagram-error" hidden></p>
+      </div>
+      <div class="field">
+        <label for="twitter-host">X/Twitter hostname</label>
+        <input
+          id="twitter-host"
+          type="text"
+          aria-describedby="host-help twitter-error"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <p class="error" id="twitter-error" hidden></p>
+      </div>
+      <div class="field">
+        <label for="tiktok-host">TikTok hostname</label>
+        <input
+          id="tiktok-host"
+          type="text"
+          aria-describedby="host-help tiktok-error"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <p class="error" id="tiktok-error" hidden></p>
+      </div>
+      <p class="help" id="host-help">
+        Enter the full hostname published by your chosen provider, for example
+        <code>example.com</code>. A hostname check cannot prove that the
+        provider supports these paths or shows working embeds. Opening or
+        sharing a rewritten link sends it to that third-party provider.
+      </p>
+      <div class="actions">
+        <button type="button" id="restore">Restore defaults</button>
+        <button type="button" id="cancel">Cancel</button>
+        <button type="submit" id="save">Save</button>
+      </div>
+    </form>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

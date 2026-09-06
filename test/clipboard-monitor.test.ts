@@ -79,6 +79,11 @@ test('removes metadata when the option is enabled', async () => {
       instagram: true,
       twitter: true,
       tiktok: true
+    },
+    targetHosts: {
+      instagram: 'kkinstagram.com',
+      twitter: 'fixupx.com',
+      tiktok: 'tnktok.com'
     }
   };
   const port = new InMemoryClipboardTextPort(source);
@@ -89,7 +94,6 @@ test('removes metadata when the option is enabled', async () => {
   assert.deepEqual(port.writes, [target]);
   assert.equal(port.text, target);
 });
-
 test('does not write a link from a disabled service', async () => {
   const source = 'https://tiktok.com/@creator/video/1234567890123456789';
   const options: LinkRewriteOptions = {
@@ -98,6 +102,11 @@ test('does not write a link from a disabled service', async () => {
       instagram: true,
       twitter: true,
       tiktok: false
+    },
+    targetHosts: {
+      instagram: 'kkinstagram.com',
+      twitter: 'fixupx.com',
+      tiktok: 'tnktok.com'
     }
   };
   const port = new InMemoryClipboardTextPort(source);
@@ -107,6 +116,30 @@ test('does not write a link from a disabled service', async () => {
   assert.equal(result, source);
   assert.deepEqual(port.writes, []);
   assert.equal(port.text, source);
+});
+test('writes a link to a custom destination host', async () => {
+  const source = 'https://x.com/example/status/1234567890';
+  const target = 'https://stupidpensix.com/example/status/1234567890';
+  const options: LinkRewriteOptions = {
+    removeMetadata: false,
+    services: {
+      instagram: true,
+      twitter: true,
+      tiktok: true
+    },
+    targetHosts: {
+      instagram: 'kkinstagram.com',
+      twitter: 'stupidpensix.com',
+      tiktok: 'tnktok.com'
+    }
+  };
+  const port = new InMemoryClipboardTextPort(source);
+
+  const result = await processClipboardOnce(port, undefined, true, options);
+
+  assert.equal(result, target);
+  assert.deepEqual(port.writes, [target]);
+  assert.equal(port.text, target);
 });
 
 test('does not overwrite a newer clipboard value and retries it next pass', async () => {

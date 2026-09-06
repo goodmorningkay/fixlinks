@@ -1,0 +1,96 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+input {
+  box-sizing: border-box;
+  font-size: 14px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+input:focus-visible {
+  outline: 2px solid #2f6fed;
+  outline-offset: 1px;
+}
+
+.error {
+  color: #b00020;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #ff7a8a;
+  }
+}
+
+.notice {
+  background-color: #fff3cd;
+  border: 1px solid #ffe08a;
+  border-radius: 4px;
+  color: #664d03;
+  font-size: 12px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .notice {
+    background-color: #3d2f00;
+    border-color: #6b5300;
+    color: #ffd166;
+  }
+}
+
+.help {
+  color: #555;
+  font-size: 12px;
+  margin: 16px 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .help {
+    color: #aaa;
+  }
+}
+
+.help code {
+  font-family: ui-monospace, monospace;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+button {
+  font-size: 14px;
+  padding: 6px 14px;
+}
