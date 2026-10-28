@@ -9,7 +9,7 @@ module.exports = {
     executableName: 'FixLinks',
     icon: iconPath,
     ignore: [
-      /^[\\/](?:src|test|dist-test|out|reports)(?:[\\/]|$)/,
+      /^[\\/](?:src|test|dist-test|out)(?:[\\/]|$)/,
       /^[\\/]tsconfig(?:\.[^\\/]*)?$/
     ],
     win32metadata: {
