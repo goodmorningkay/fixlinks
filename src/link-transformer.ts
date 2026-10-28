@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+import { domainToUnicode } from 'node:url';
 
 const INSTAGRAM_HOSTS: Record<string, true> = {
   'instagram.com': true,
@@ -87,6 +88,17 @@ export function validateTargetHostname(input: unknown): string | null {
       !HOSTNAME_LABEL_PATTERN.test(label)
     ) {
       return null;
+    }
+    if (label.startsWith('xn--')) {
+      // Some Node versions leave invalid punycode unchanged instead of rejecting it.
+      const decodedLabel = domainToUnicode(label);
+      if (
+        decodedLabel.length === 0 ||
+        decodedLabel === label ||
+        /\p{Cc}/u.test(decodedLabel)
+      ) {
+        return null;
+      }
     }
   }
   let hostname: string;
