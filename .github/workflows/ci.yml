@@ -29,8 +29,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check dependencies for high and critical vulnerabilities
+        run: npm audit --audit-level=high
+
       - name: Run tests
         run: npm test
 
       - name: Build application
         run: npm run build
+
+      - name: Build Windows installer
+        run: npm run make
