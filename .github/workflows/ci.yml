@@ -13,8 +13,11 @@ permissions:
 
 jobs:
   test:
-    name: Test and build
+    name: Test and build (npm ${{ matrix.npm }})
     runs-on: windows-latest
+    strategy:
+      matrix:
+        npm: [bundled, '12']
 
     steps:
       - name: Check out repository
@@ -26,11 +29,21 @@ jobs:
           node-version: 24.x
           cache: npm
 
+      - name: Install npm 12
+        if: matrix.npm == '12'
+        run: npm install --global npm@12
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Check dependencies for high and critical vulnerabilities
+        run: npm audit --audit-level=high
 
       - name: Run tests
         run: npm test
 
       - name: Build application
         run: npm run build
+
+      - name: Build Windows installer
+        run: npm run make
