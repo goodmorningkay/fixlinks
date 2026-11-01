@@ -70,8 +70,7 @@ test('does not write while paused', async () => {
 });
 
 test('removes metadata when the option is enabled', async () => {
-  const source =
-    'https://www.instagram.com/p/CODE_123?igsh=example#fragment';
+  const source = 'https://www.instagram.com/p/CODE_123?igsh=example#fragment';
   const target = 'https://kkinstagram.com/p/CODE_123';
   const options: LinkRewriteOptions = {
     removeMetadata: true,
@@ -157,7 +156,9 @@ test('does not overwrite a newer clipboard value and retries it next pass', asyn
   const retriedValue = await processClipboardOnce(port, racedState, true);
 
   assert.equal(retriedValue, 'https://fixupx.com/example/status/1234567890');
-  assert.deepEqual(port.writes, ['https://fixupx.com/example/status/1234567890']);
+  assert.deepEqual(port.writes, [
+    'https://fixupx.com/example/status/1234567890'
+  ]);
 });
 
 test('retains previous state after the first read fails', async () => {

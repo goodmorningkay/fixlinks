@@ -66,10 +66,7 @@ form.addEventListener('submit', async (event) => {
   for (const service of services) {
     const value = fields[service].input.value;
     if (value.trim().length === 0) {
-      setFieldError(
-        service,
-        `Enter the ${serviceLabels[service]} hostname.`
-      );
+      setFieldError(service, `Enter the ${serviceLabels[service]} hostname.`);
       firstInvalidService ??= service;
     }
     hosts[service] = value;

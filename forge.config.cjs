@@ -9,12 +9,14 @@ module.exports = {
     executableName: 'FixLinks',
     icon: iconPath,
     ignore: [
-      /^[\\/](?:src|test|dist-test|out)(?:[\\/]|$)/,
-      /^[\\/]tsconfig(?:\.[^\\/]*)?$/
+      /^[\\/](?:src|test|scripts|dist-test|out)(?:[\\/]|$)/,
+      /^[\\/]tsconfig(?:\.[^\\/]*)?$/,
+      /^[\\/](?:biome\.json|\.prettier.*|\.editorconfig)$/
     ],
     win32metadata: {
       CompanyName: 'FixLinks contributors',
-      FileDescription: 'FixLinks converts copied social-post links into Discord-friendly embed links.',
+      FileDescription:
+        'FixLinks converts copied social-post links into Discord-friendly embed links.',
       InternalName: 'FixLinks',
       ProductName: 'FixLinks'
     }

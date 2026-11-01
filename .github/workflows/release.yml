@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Build and publish Windows release
@@ -26,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check formatting, lint, tests, and build
+        run: npm run check
+
       - name: Check tag version
         shell: pwsh
         run: |
@@ -37,18 +44,39 @@ jobs:
       - name: Build Windows installer
         run: npm run make
 
-      - name: Publish GitHub release
+      - name: Verify update artifacts
+        run: npm run verify:release
+
+      - name: Upload, verify, and publish GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          shopt -s nullglob
+          set -euo pipefail
           artifacts=(out/make/squirrel.windows/x64/*)
-          if ((${#artifacts[@]} == 0)); then
-            echo "No release artifacts found."
-            exit 1
+          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq '.isDraft'); then
+            if [[ "$draft" != true ]]; then
+              echo "This release is already published. Create a new version."
+              exit 1
+            fi
+            gh release upload "$GITHUB_REF_NAME" "${artifacts[@]}" --clobber
+          else
+            release_flags=(--draft --verify-tag --title "$GITHUB_REF_NAME" --generate-notes)
+            if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create "$GITHUB_REF_NAME" "${artifacts[@]}" "${release_flags[@]}"
           fi
-          gh release create "$GITHUB_REF_NAME" "${artifacts[@]}" \
-            --verify-tag \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes
+
+          verify_dir=$(mktemp -d)
+          gh release download "$GITHUB_REF_NAME" --dir "$verify_dir"
+          npm run verify:release -- "$verify_dir"
+          for artifact in "${artifacts[@]}"; do
+            cmp -- "$artifact" "$verify_dir/${artifact##*/}"
+          done
+
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease=false --latest
+          fi

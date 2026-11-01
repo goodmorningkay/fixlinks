@@ -4,8 +4,10 @@ import squirrelStartup from 'electron-squirrel-startup';
 import Store from 'electron-store';
 import {
   app,
+  autoUpdater,
   BrowserWindow,
   clipboard,
+  dialog,
   ipcMain,
   Menu,
   Tray
@@ -24,6 +26,11 @@ import {
   type LinkRewriteOptions,
   type LinkService
 } from './link-transformer.js';
+import {
+  getUpdateMenu,
+  UpdateManager,
+  type UpdateNotice
+} from './update-manager.js';
 
 const POLL_INTERVAL_MS = 500;
 const LOGIN_ITEM_ARGS = ['--started-at-login'];
@@ -37,6 +44,7 @@ const clipboardPort: ClipboardTextPort = {
 };
 
 type AppSettings = {
+  automaticUpdates: boolean;
   runAtLogin: boolean;
   removeMetadata: boolean;
   instagram: boolean;
@@ -56,7 +64,95 @@ let loginItemPath = process.execPath;
 let settings: Store<AppSettings> | undefined;
 let isQuitting = false;
 let settingsWindow: BrowserWindow | undefined;
+let updateManager: UpdateManager | undefined;
+let restartPromptOpen = false;
 
+function showUpdateNotice(notice: UpdateNotice): void {
+  if (notice === 'error' && isQuitting && updateManager?.state === 'ready') {
+    isQuitting = false;
+    void pollClipboard();
+  }
+  if (isQuitting) {
+    return;
+  }
+  if (notice === 'ready') {
+    tray?.displayBalloon({
+      title: 'FixLinks update ready',
+      content:
+        'Select Restart to update from the tray menu, or restart FixLinks later.'
+    });
+    return;
+  }
+  void dialog
+    .showMessageBox({
+      type: notice === 'error' ? 'warning' : 'info',
+      title: 'FixLinks updates',
+      message:
+        notice === 'current'
+          ? 'FixLinks is up to date.'
+          : 'Could not complete the update. Try again later.',
+      detail: `Installed version: ${app.getVersion()}`
+    })
+    .catch(() => {});
+}
+
+async function restartForUpdate(): Promise<void> {
+  if (restartPromptOpen || updateManager?.state !== 'ready' || isQuitting) {
+    return;
+  }
+  restartPromptOpen = true;
+  try {
+    if (settingsWindow !== undefined) {
+      settingsWindow.show();
+      settingsWindow.focus();
+      const { response } = await dialog.showMessageBox(settingsWindow, {
+        type: 'question',
+        title: 'Restart to update',
+        message: 'The settings window is open.',
+        detail:
+          'Return to settings to save your changes, or discard changes and restart.',
+        buttons: ['Return to settings', 'Discard changes and restart'],
+        defaultId: 0,
+        cancelId: 0
+      });
+      if (response !== 1 || isQuitting) {
+        return;
+      }
+    }
+    // Finish a clipboard write before asking Squirrel to restart this process.
+    isQuitting = true;
+    stopClipboardPolling();
+    await clipboardPass;
+    stopClipboardPolling();
+    if (!updateManager.restart() && isQuitting) {
+      isQuitting = false;
+      void pollClipboard();
+      showUpdateNotice('error');
+    }
+  } catch {
+    isQuitting = false;
+    if (pollTimer === undefined && clipboardPass === undefined) {
+      void pollClipboard();
+    }
+    showUpdateNotice('error');
+  } finally {
+    restartPromptOpen = false;
+  }
+}
+
+function toggleAutomaticUpdates(): void {
+  if (settings === undefined || updateManager === undefined) {
+    return;
+  }
+  const nextValue = !updateManager.automaticUpdates;
+  try {
+    settings.set('automaticUpdates', nextValue);
+    updateManager.setAutomaticUpdates(nextValue);
+    refreshTray();
+  } catch {
+    showUpdateNotice('error');
+  }
+}
 
 function getStableLoginItemPath(): string {
   const stablePath = path.resolve(
@@ -195,6 +291,26 @@ function refreshTray(): void {
         }
       },
       { type: 'separator' },
+      { label: `FixLinks ${app.getVersion()}`, enabled: false },
+      {
+        label: 'Automatic updates',
+        type: 'checkbox',
+        checked: updateManager?.automaticUpdates ?? true,
+        enabled:
+          updateManager !== undefined && updateManager.state !== 'unavailable',
+        click: toggleAutomaticUpdates
+      },
+      {
+        ...getUpdateMenu(updateManager?.state ?? 'unavailable'),
+        click: () => {
+          if (updateManager?.state === 'ready') {
+            void restartForUpdate();
+          } else {
+            updateManager?.check();
+          }
+        }
+      },
+      { type: 'separator' },
       {
         label: 'Exit',
         click: () => {
@@ -320,8 +436,7 @@ function registerSettingsIpc(): void {
         const record = input as Record<string, unknown>;
         for (const service of LINK_SERVICES) {
           if (validateTargetHostname(record[service]) === null) {
-            errors[service] =
-              'Use a full hostname such as example.com.';
+            errors[service] = 'Use a full hostname such as example.com.';
           }
         }
       }
@@ -354,6 +469,10 @@ function registerSettingsIpc(): void {
 async function startApplication(): Promise<void> {
   settings = new Store<AppSettings>({
     schema: {
+      automaticUpdates: {
+        type: 'boolean',
+        default: true
+      },
       runAtLogin: {
         type: 'boolean',
         default: true
@@ -378,6 +497,7 @@ async function startApplication(): Promise<void> {
       targetHosts: {}
     },
     defaults: {
+      automaticUpdates: true,
       runAtLogin: true,
       removeMetadata: false,
       instagram: true,
@@ -415,6 +535,23 @@ async function startApplication(): Promise<void> {
   }
 
   tray = new Tray(path.join(app.getAppPath(), 'assets', 'fixlinks.ico'));
+  updateManager = new UpdateManager({
+    updater: autoUpdater,
+    environment: {
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      arch: process.arch,
+      hasSquirrel: existsSync(
+        path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
+      ),
+      version: app.getVersion()
+    },
+    automaticUpdates: settings.get('automaticUpdates'),
+    firstRun: process.argv.includes('--squirrel-firstrun'),
+    onStateChange: refreshTray,
+    onNotice: showUpdateNotice
+  });
+  updateManager.start();
   refreshTray();
   if (loadedTargetHosts.invalid) {
     openSettingsWindow();
@@ -424,6 +561,7 @@ async function startApplication(): Promise<void> {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  updateManager?.stop();
   stopClipboardPolling();
   settingsWindow?.close();
   settingsWindow = undefined;
@@ -440,7 +578,10 @@ if (squirrelStartup) {
 } else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  void app.whenReady().then(startApplication).catch(() => {
-    app.quit();
-  });
+  void app
+    .whenReady()
+    .then(startApplication)
+    .catch(() => {
+      app.quit();
+    });
 }

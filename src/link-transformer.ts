@@ -66,6 +66,8 @@ export function validateTargetHostname(input: unknown): string | null {
     return null;
   }
   const trimmed = input.trim();
+  // Reject non-ASCII hostnames before WHATWG URL can convert them to punycode.
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: This range defines ASCII.
   if (/[^\x00-\x7f]/u.test(trimmed)) {
     return null;
   }

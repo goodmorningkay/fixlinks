@@ -168,7 +168,8 @@ const metadataRemovalCases: LinkCase[] = [
   },
   {
     name: 'TikTok query and fragment',
-    input: 'https://www.tiktok.com/@creator/video/1234567890123456789?share=1#post',
+    input:
+      'https://www.tiktok.com/@creator/video/1234567890123456789?share=1#post',
     expected: 'https://tnktok.com/@creator/video/1234567890123456789'
   }
 ];
@@ -176,10 +177,7 @@ const metadataRemovalCases: LinkCase[] = [
 for (const linkCase of metadataRemovalCases) {
   test(`removes metadata from ${linkCase.name}`, () => {
     assert.equal(
-      rewriteSocialLink(
-        linkCase.input,
-        makeOptions({ removeMetadata: true })
-      ),
+      rewriteSocialLink(linkCase.input, makeOptions({ removeMetadata: true })),
       linkCase.expected
     );
   });
@@ -284,7 +282,10 @@ test('rewrites a disabled service to its configured host when enabled again', ()
     targetHosts: { twitter: 'stupidpensix.com' }
   });
   assert.equal(
-    rewriteSocialLink('https://x.com/example/status/1234567890', enabledOptions),
+    rewriteSocialLink(
+      'https://x.com/example/status/1234567890',
+      enabledOptions
+    ),
     'https://stupidpensix.com/example/status/1234567890'
   );
 });
@@ -293,10 +294,7 @@ test('does not rewrite an already converted link after a destination change', ()
   const options = makeOptions({ targetHosts: { twitter: 'stupidpensix.com' } });
 
   assert.equal(
-    rewriteSocialLink(
-      'https://fixupx.com/example/status/1234567890',
-      options
-    ),
+    rewriteSocialLink('https://fixupx.com/example/status/1234567890', options),
     null
   );
   assert.equal(
@@ -389,7 +387,6 @@ const rejectedInputs = [
   'https://www.twitter.com/i/status/1234567890/other/1'
 ];
 
-
 for (const input of rejectedInputs) {
   test(`rejects ${input}`, () => {
     assert.equal(rewriteSocialLink(input), null);
@@ -403,10 +400,7 @@ test('validates and normalizes destination hostnames', () => {
     ['sub.example.com', 'sub.example.com'],
     ['a-b.example.com', 'a-b.example.com'],
     ['xn--bcher-kva.example', 'xn--bcher-kva.example'],
-    [
-      `a.${'b'.repeat(62)}.example.com`,
-      `a.${'b'.repeat(62)}.example.com`
-    ]
+    [`a.${'b'.repeat(62)}.example.com`, `a.${'b'.repeat(62)}.example.com`]
   ];
   for (const [input, expected] of validHosts) {
     assert.equal(validateTargetHostname(input), expected);
@@ -438,9 +432,9 @@ test('validates and normalizes destination hostnames', () => {
     'example..com',
     '-example.com',
     'example-.com',
-    'a'.repeat(64) + '.com',
+    `${'a'.repeat(64)}.com`,
     `a.${'b'.repeat(64)}.example.com`,
-    'a.b.' + 'c'.repeat(250),
+    `a.b.${'c'.repeat(250)}`,
     'https://instagram.com/p/CODE',
     123,
     null,
@@ -462,7 +456,10 @@ test('rejects hosts that URL parsing changes or cannot use', () => {
   ]) {
     assert.equal(validateTargetHostname(host), null, host);
     assert.equal(
-      validateTargetHosts({ ...DEFAULT_LINK_REWRITE_OPTIONS.targetHosts, twitter: host }),
+      validateTargetHosts({
+        ...DEFAULT_LINK_REWRITE_OPTIONS.targetHosts,
+        twitter: host
+      }),
       null,
       host
     );

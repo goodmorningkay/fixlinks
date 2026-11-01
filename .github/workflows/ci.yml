@@ -39,11 +39,15 @@ jobs:
       - name: Check dependencies for high and critical vulnerabilities
         run: npm audit --audit-level=high
 
-      - name: Run tests
-        run: npm test
-
-      - name: Build application
-        run: npm run build
+      - name: Check formatting, lint, tests, and build
+        run: npm run check
 
       - name: Build Windows installer
         run: npm run make
+
+      - name: Verify update artifacts
+        shell: pwsh
+        run: |
+          $packageVersion = node -p "require('./package.json').version"
+          $env:GITHUB_REF_NAME = "v$packageVersion"
+          npm run verify:release
